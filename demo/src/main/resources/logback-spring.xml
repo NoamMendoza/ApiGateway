@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  logback-spring.xml — Configuración de logging para Spring Boot.
+  El sufijo "-spring" permite usar propiedades de Spring con <springProfile>.
+
+  IMPORTANTE: En Spring Boot 4.x el conversor de colores (%clr) ya no se
+  registra automáticamente — hay que declararlo con <conversionRule>.
+-->
+<configuration>
+
+    <!-- Registrar el conversor de colores que usa Spring Boot -->
+    <conversionRule conversionWord="clr"
+                    converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+
+    <!-- Perfil DEV y default: logs coloridos y legibles en consola -->
+    <springProfile name="dev,default,test">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <!--
+                  %clr aplica color según el nivel: ERROR=rojo, WARN=amarillo, INFO=verde, DEBUG=azul
+                  %-40.40logger{39} trunca el nombre de la clase a 40 caracteres para alinear la salida
+                -->
+                <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) --- [%15.15t] %clr(%-40.40logger{39}){cyan} : %m%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <!-- Nivel DEBUG solo para nuestro código, no para las librerías externas -->
+        <logger name="com.apigatewaypagos" level="DEBUG"/>
+    </springProfile>
+
+    <!-- Perfil PROD: logs simples sin colores (los procesa una máquina, no una persona) -->
+    <springProfile name="prod">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <!-- Formato parseable por herramientas como Datadog, Cloudwatch o Loki -->
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %-5p [%t] %logger{36} : %m%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <!-- Silenciar librerías ruidosas en producción para reducir costos de almacenamiento de logs -->
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="com.apigatewaypagos" level="INFO"/>
+    </springProfile>
+
+</configuration>
