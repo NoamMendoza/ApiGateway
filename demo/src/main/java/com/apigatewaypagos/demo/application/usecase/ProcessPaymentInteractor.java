@@ -42,7 +42,7 @@ public class ProcessPaymentInteractor implements ProcessPaymentUseCase {
         }
 
         Money money = new Money(command.amount(), command.currency());
-        Payment payment = new Payment(command.idempotencyKey(), command.merchantId(), money);
+        Payment payment = new Payment(command.idempotencyKey(), command.merchantId(), money, command.paymentMethodToken());
         paymentRepository.save(payment);
         payment.authorize();
         log.debug("Pago creado y autorizado — paymentId={}", payment.getId());
