@@ -1,6 +1,8 @@
 package com.apigatewaypagos.demo.infrastructure.persistence;
 
 import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.stereotype.Component;
 
 import com.apigatewaypagos.demo.domain.model.ApiKey;
@@ -26,5 +28,11 @@ public class ApiKeyRepositoryAdapter implements ApiKeyRepository {
     public void save(ApiKey apiKey) {
         ApiKeyEntity entity = ApiKeyEntity.fromDomain(apiKey);
         springDataApiKeyRepository.save(entity);
+    }
+
+    @Override
+    public Optional<ApiKey> findById(UUID id){
+        return springDataApiKeyRepository.findById(id)
+            .map(ApiKeyEntity::toDomain);
     }
 }
