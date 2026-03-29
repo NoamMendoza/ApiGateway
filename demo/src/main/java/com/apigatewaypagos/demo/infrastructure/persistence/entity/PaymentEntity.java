@@ -41,6 +41,7 @@ public class PaymentEntity {
     private BigDecimal amount;
     private String currency;
     @Enumerated(EnumType.STRING) private PaymentStatus status;
+    private String paymentMethodToken;
 
     public static PaymentEntity fromDomain(com.apigatewaypagos.demo.domain.model.Payment payment){
         PaymentEntity entity = new PaymentEntity();
@@ -52,6 +53,7 @@ public class PaymentEntity {
         }
         entity.setStatus(payment.getStatus());
         entity.setIdempotencyKey(payment.getIdempotencyKey());
+        entity.setPaymentMethodToken(payment.getPaymentMethodToken());
         return entity;
     }
 
@@ -63,9 +65,10 @@ public class PaymentEntity {
             new com.apigatewaypagos.demo.domain.model.Money(this.amount, this.currency),
             this.status,
             this.createdAt,
-            this.processedAt
+            this.processedAt,
+            this.paymentMethodToken
         );
-    };
+    }
 
 }
 

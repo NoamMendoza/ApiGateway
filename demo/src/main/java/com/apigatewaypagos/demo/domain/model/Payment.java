@@ -13,8 +13,9 @@ public class Payment {
     private final LocalDateTime createdAt;
     private LocalDateTime processedAt;
     private final String idempotencyKey;
+    private final String paymentMethodToken;
 
-    public Payment(String idempotencyKey, String merchantId, Money amount){
+    public Payment(String idempotencyKey, String merchantId, Money amount, String paymentMethodToken){
         this.id = UUID.randomUUID();
         this.merchantId = merchantId;
         this.amount = amount;
@@ -24,9 +25,10 @@ public class Payment {
             throw new IllegalArgumentException("La llave de idempotencia es obligatoria");
         }
         this.idempotencyKey = idempotencyKey;
+        this.paymentMethodToken = paymentMethodToken;
     }
 
-    private Payment(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt){
+    private Payment(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt, String paymentMethodToken){
         this.id = id;
         this.idempotencyKey = idempotencyKey;
         this.merchantId = merchantId;
@@ -34,10 +36,11 @@ public class Payment {
         this.status = status;
         this.createdAt = createdAt;
         this.processedAt = processedAt;
+        this.paymentMethodToken = paymentMethodToken;
     }
 
-    public static Payment restore(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt){
-        return new Payment(id, idempotencyKey, merchantId, amount, status, createdAt, processedAt);
+    public static Payment restore(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt, String paymentMethodToken){
+        return new Payment(id, idempotencyKey, merchantId, amount, status, createdAt, processedAt, paymentMethodToken);
     }
 
     public void authorize(){
@@ -72,5 +75,6 @@ public class Payment {
     public String getIdempotencyKey(){return idempotencyKey;}
     public LocalDateTime getCreatedAt(){return createdAt;}
     public LocalDateTime getProcessedAt(){return processedAt;}
+    public String getPaymentMethodToken(){return paymentMethodToken;}
     
 }

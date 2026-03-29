@@ -1,6 +1,7 @@
 package com.apigatewaypagos.demo.infrastructure.web.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +33,14 @@ public class PaymentController {
 
     @PostMapping
     public ResponseEntity<String> processPayment(@RequestHeader("Idempotency-key") String idempotencyKey, @Valid @RequestBody PaymentRequest request) {
-        ProcessPaymentCommand command = new ProcessPaymentCommand(idempotencyKey, request.merchantId(), request.amount(), request.currency());
+       String merchantId = SecurityContextHolder.getContext().getAuthentication().getName();
+        ProcessPaymentCommand command = new ProcessPaymentCommand(
+            idempotencyKey,
+            merchantId,
+            request.amount(),
+            request.currency(),
+            request.paymentMethodToken()
+        );
         processPaymentUseCase.execute(command);
         return ResponseEntity.ok("Pago Procesado");
     }
