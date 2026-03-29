@@ -33,7 +33,8 @@ public class PaymentEntity {
     @Column(unique = true, nullable = false)
     private String idempotencyKey;
 
-    private String merchatId;
+    @Column(name = "merchant_id")
+    private String merchantId;
     private LocalDateTime createdAt;
     private LocalDateTime processedAt;
 
@@ -44,7 +45,7 @@ public class PaymentEntity {
     public static PaymentEntity fromDomain(com.apigatewaypagos.demo.domain.model.Payment payment){
         PaymentEntity entity = new PaymentEntity();
         entity.setId(payment.getId());
-        entity.setMerchatId(payment.getMerchantId());
+        entity.setMerchantId(payment.getMerchantId());
         if (payment.getAmount() != null) {
             entity.setAmount(payment.getAmount().amount());
             entity.setCurrency(payment.getAmount().currency());
@@ -58,7 +59,7 @@ public class PaymentEntity {
         return com.apigatewaypagos.demo.domain.model.Payment.restore(
             this.id,
             this.idempotencyKey,
-            this.merchatId,
+            this.merchantId,
             new com.apigatewaypagos.demo.domain.model.Money(this.amount, this.currency),
             this.status,
             this.createdAt,
