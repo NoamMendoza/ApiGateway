@@ -19,8 +19,13 @@ import com.apigatewaypagos.demo.infrastructure.web.dto.PaymentRequest;
 import jakarta.validation.Valid;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/payments")
+@Tag(name = "Pagos 💵", description = "Endpoints para procesar transacciones bancarias (B2B).")
 public class PaymentController {
     
     private final ProcessPaymentUseCase processPaymentUseCase;
@@ -32,7 +37,14 @@ public class PaymentController {
     }
 
     @PostMapping
-    public ResponseEntity<String> processPayment(@RequestHeader("Idempotency-key") String idempotencyKey, @Valid @RequestBody PaymentRequest request) {
+    @Operation(
+        summary = "Procesar pago de tarjeta",
+        description = "Envía la petición del comercio hacia Stripe de forma asíncrona validando la integridad con un UUID de idempotencia.",
+        security = @SecurityRequirement(name = "ApiKey")
+    )
+    public ResponseEntity<String> processPayment(
+            @RequestHeader("Idempotency-key") String idempotencyKey, 
+            @Valid @RequestBody PaymentRequest request) {
        String merchantId = SecurityContextHolder.getContext().getAuthentication().getName();
         ProcessPaymentCommand command = new ProcessPaymentCommand(
             idempotencyKey,
@@ -46,7 +58,12 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentResponseDTO> getPaymentStatus(@PathVariable UUID id) {
+    @Operation(
+        summary = "Consultar el estado de un pago",
+        description = "Obtén el resumen financiero de una transacción mediante su identificador UUID único.",
+        security = @SecurityRequirement(name = "ApiKey")
+    )
+    public ResponseEntity<PaymentResponseDTO> getPaymentStatus(@PathVariable("id") UUID id) {
         PaymentResponseDTO response = getPaymentUseCase.execute(id);
         return ResponseEntity.ok(response);
     }

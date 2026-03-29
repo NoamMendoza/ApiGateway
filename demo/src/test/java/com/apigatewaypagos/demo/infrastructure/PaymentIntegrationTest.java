@@ -58,7 +58,7 @@ public class PaymentIntegrationTest {
     void shouldSaveAndRetrievePaymentFromDatabase() {
         // 1. Arrange: Crear un pago de dominio puro
         String idempotencyKey = "test-key-123";
-        Payment newPayment = new Payment(idempotencyKey, "merch-001", new Money(new BigDecimal("150.50"), "MXN"));
+        Payment newPayment = new Payment(idempotencyKey, "merch-001", new Money(new BigDecimal("150.50"), "MXN"), "pm_card_visa");
         
         // 2. Act: Guardarlo en la base de datos (PostgreSQL en Testcontainers)
         paymentRepository.save(newPayment);
@@ -78,8 +78,8 @@ public class PaymentIntegrationTest {
     void shouldThrowExceptionWhenSavingDuplicateIdempotencyKey() {
         // Arrange
         String idempotencyKey = "duplicate-key-456";
-        Payment firstPayment = new Payment(idempotencyKey, "merch-001", new Money(new BigDecimal("100.00"), "MXN"));
-        Payment secondPayment = new Payment(idempotencyKey, "merch-002", new Money(new BigDecimal("200.00"), "USD"));
+        Payment firstPayment = new Payment(idempotencyKey, "merch-001", new Money(new BigDecimal("100.00"), "MXN"), "pm_card_visa");
+        Payment secondPayment = new Payment(idempotencyKey, "merch-002", new Money(new BigDecimal("200.00"), "USD"), "pm_card_visa");
         
         // Act
         paymentRepository.save(firstPayment);
@@ -97,7 +97,7 @@ public class PaymentIntegrationTest {
         // Assert: Valida que el dominio de Java lance IllegalArgumentException antes de llegar a la base de datos
         org.junit.jupiter.api.Assertions.assertThrows(
             IllegalArgumentException.class,
-            () -> new Payment("", "merch-123", new Money(new BigDecimal("100.00"), "MXN")),
+            () -> new Payment("", "merch-123", new Money(new BigDecimal("100.00"), "MXN"), "pm_card_visa"),
             "La llave de idempotencia es obligatoria"
         );
     }
@@ -109,7 +109,7 @@ public class PaymentIntegrationTest {
         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
         .content("""
             {
-                "merchantId": "merch-123",
+                "paymentMethodToken": "pm_card_visa",
                 "amount":500.00,
                 "currency":"MXN"
             }""")
@@ -119,7 +119,7 @@ public class PaymentIntegrationTest {
 
     @Test
     void shouldBlockPaymentWhenRateLimitIsExceeded() throws Exception {
-        String validJson = "{\"merchantId\": \"merch-123\", \"amount\":500.00, \"currency\":\"MXN\"}";
+        String validJson = "{\"paymentMethodToken\": \"pm_card_visa\", \"amount\":500.00, \"currency\":\"MXN\"}";
         String validApiKey = "sk_test-123456789"; // Llave configurada en application.properties
         
         // Hacemos 5 peticiones exitosas consecutivas
@@ -148,7 +148,7 @@ public class PaymentIntegrationTest {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .post("/api/payments")
             .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-            .content("{\"merchantId\": \"merch-123\", \"amount\":500.00, \"currency\":\"MXN\"}")
+            .content("{\"paymentMethodToken\": \"pm_card_visa\", \"amount\":500.00, \"currency\":\"MXN\"}")
             .header("Idempotency-Key", "event-test-key-001")
             .header("X-API-KEY", "sk_test-123456789"))
             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());

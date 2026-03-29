@@ -28,7 +28,7 @@ public class BankGatewayAdapterTest {
 
     @Test
     void shouldProcessPaymentSuccessfully() {
-        Payment dummyPayment = new Payment("dummy-key-2", "merch-123", new Money(new BigDecimal("100"), "MXN"));
+        Payment dummyPayment = new Payment("dummy-key-2", "merch-123", new Money(new BigDecimal("100"), "MXN"), "pm_card_visa");
         
         System.out.println("=========================================");
         System.out.println("💳 PRUEBA DEL ADAPTADOR BANCARIO");

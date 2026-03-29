@@ -15,7 +15,7 @@ public class ApiKeyService {
         this.apiKeyRepository = apiKeyRepository;
     }
 
-    @Cacheable(value ="api_keys", key = "#rawApiKey")
+    @Cacheable(value ="api_keys", key = "#p0")
     public Optional<String> validateAndGetMerchantId(String rawApiKey) {
         if (rawApiKey == null || rawApiKey.length() < 8) {
             return Optional.empty();
