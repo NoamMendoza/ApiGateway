@@ -31,14 +31,20 @@ public class ProcessPaymentInteractor implements ProcessPaymentUseCase {
     }
 
     @Override
-    public void execute(ProcessPaymentCommand command) {
+    public Payment execute(ProcessPaymentCommand command) {
         log.info("Iniciando procesamiento de pago — merchant={}, idempotencyKey={}",
                 command.merchantId(), command.idempotencyKey());
 
-        var existingPayment = paymentRepository.findByIdempotencyKey(command.idempotencyKey());
-        if (existingPayment.isPresent()) {
-            log.warn("Pago duplicado detectado — idempotencyKey={}", command.idempotencyKey());
-            throw new InvalidPaymentStateException("Transaccion ya fue procesada anteriormente");
+        var existingPaymentOpt = paymentRepository.findByIdempotencyKey(command.idempotencyKey());
+        if (existingPaymentOpt.isPresent()) {
+            Payment existing = existingPaymentOpt.get();
+            if (isSameRequest(existing, command)) {
+                log.info("Reintento de pago detectado (Smart Idempotency) — devolviendo resultado previo.");
+                return existing;
+            } else {
+                log.warn("Conflicto de Idempotencia — La llave ya existe con diferentes parámetros.");
+                throw new InvalidPaymentStateException("La llave de idempotencia ya ha sido utilizada para una transacción diferente.");
+            }
         }
 
         Money money = new Money(command.amount(), command.currency());
@@ -47,19 +53,28 @@ public class ProcessPaymentInteractor implements ProcessPaymentUseCase {
         payment.authorize();
         log.debug("Pago creado y autorizado — paymentId={}", payment.getId());
 
-        boolean isSuccess = bankGatewayPort.process(payment);
+        com.apigatewaypagos.demo.application.port.out.PaymentGatewayResult result = bankGatewayPort.process(payment);
 
-        if (isSuccess) {
+        if (result.isSuccess()) {
             payment.capture();
-            log.info("Pago capturado exitosamente — paymentId={}, amount={} {}",
-                    payment.getId(), payment.getAmount().amount(), payment.getAmount().currency());
+            payment.setExternalTransactionId(result.externalId());
+            log.info("Pago capturado exitosamente — paymentId={}, amount={} {}, externalId={}",
+                    payment.getId(), payment.getAmount().amount(), payment.getAmount().currency(), payment.getExternalTransactionId());
         } else {
             payment.decline();
-            log.warn("Pago declinado por el banco — paymentId={}", payment.getId());
+            log.warn("Pago declinado por el banco — paymentId={}, error={}", payment.getId(), result.errorMessage());
         }
 
         paymentRepository.save(payment);
         eventPublisherPort.publishPaymentCompletedEvent(payment);
         log.info("Evento publicado a RabbitMQ — paymentId={}, status={}", payment.getId(), payment.getStatus());
+        
+        return payment;
+    }
+
+    private boolean isSameRequest(Payment payment, ProcessPaymentCommand command) {
+        return payment.getMerchantId().equals(command.merchantId()) &&
+               payment.getAmount().amount().compareTo(command.amount()) == 0 &&
+               payment.getAmount().currency().equalsIgnoreCase(command.currency());
     }
 }

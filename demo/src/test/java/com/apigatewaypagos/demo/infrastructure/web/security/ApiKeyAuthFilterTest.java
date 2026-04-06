@@ -40,7 +40,7 @@ public class ApiKeyAuthFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
         // Simulamos que el servicio reconoce la llave y devuelve el comerciante
-        when(apiKeyService.validateAndGetMerchantId("sk_live_valida123")).thenReturn(Optional.of("micasa_mx"));
+        when(apiKeyService.validateAndGetApiKeyDetails("sk_live_valida123")).thenReturn(Optional.of(new ApiKeyService.ApiKeyResult("micasa_mx", "CHARGE")));
         // Act
         apiKeyAuthFilter.doFilterInternal(request, response, filterChain);
         // Assert
@@ -55,7 +55,7 @@ public class ApiKeyAuthFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
         // Simulamos que la llave es inválida, expirada o revocada
-        when(apiKeyService.validateAndGetMerchantId("sk_live_mala123")).thenReturn(Optional.empty());
+        when(apiKeyService.validateAndGetApiKeyDetails("sk_live_mala123")).thenReturn(Optional.empty());
         // Act
         apiKeyAuthFilter.doFilterInternal(request, response, filterChain);
         // Assert
@@ -73,6 +73,6 @@ public class ApiKeyAuthFilterTest {
         // Assert
         // El filtro tiene una regla: if(!path.startsWith("/api/payments")) -> dejar pasar.
         assertEquals(HttpStatus.OK.value(), response.getStatus(), "Rutas ajenas a /api/payments no requieren revisión de llave");
-        verify(apiKeyService, never()).validateAndGetMerchantId(anyString()); // Verifica que el servicio de autenticación ni siquiera es llamado
+        verify(apiKeyService, never()).validateAndGetApiKeyDetails(anyString()); // Verifica que el servicio de autenticación ni siquiera es llamado
     }
 }

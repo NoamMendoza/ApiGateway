@@ -42,6 +42,9 @@ public class PaymentEntity {
     private String currency;
     @Enumerated(EnumType.STRING) private PaymentStatus status;
     private String paymentMethodToken;
+    
+    @Column(name = "external_transaction_id")
+    private String externalTransactionId;
 
     public static PaymentEntity fromDomain(com.apigatewaypagos.demo.domain.model.Payment payment){
         PaymentEntity entity = new PaymentEntity();
@@ -54,6 +57,9 @@ public class PaymentEntity {
         entity.setStatus(payment.getStatus());
         entity.setIdempotencyKey(payment.getIdempotencyKey());
         entity.setPaymentMethodToken(payment.getPaymentMethodToken());
+        entity.setExternalTransactionId(payment.getExternalTransactionId());
+        entity.setCreatedAt(payment.getCreatedAt());
+        entity.setProcessedAt(payment.getProcessedAt());
         return entity;
     }
 
@@ -66,7 +72,8 @@ public class PaymentEntity {
             this.status,
             this.createdAt,
             this.processedAt,
-            this.paymentMethodToken
+            this.paymentMethodToken,
+            this.externalTransactionId
         );
     }
 

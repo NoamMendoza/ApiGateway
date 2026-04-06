@@ -6,5 +6,6 @@ public enum PaymentStatus {
     CAPTURED,    // El cobro fue exitoso y el dinero se movió
     DECLINED,    // El banco rechazó la tarjeta (sin fondos, robada, etc.)
     REFUNDED,    // El dinero fue devuelto al cliente
+    DISPUTED,    // El cliente abrió un contracargo (Chargeback) con su banco
     FAILED       // Hubo un error técnico en el sistema o red
 }

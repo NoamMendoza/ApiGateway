@@ -6,14 +6,17 @@ import java.util.UUID;
 import com.apigatewaypagos.demo.domain.exception.InvalidPaymentStateException;
 
 public class Payment {
-    private final UUID id;
-    private final String merchantId;
-    private final Money amount;
+    private UUID id;
+    private String merchantId;
+    private Money amount;
     private PaymentStatus status;
-    private final LocalDateTime createdAt;
+    private LocalDateTime createdAt;
     private LocalDateTime processedAt;
-    private final String idempotencyKey;
-    private final String paymentMethodToken;
+    private String idempotencyKey;
+    private String paymentMethodToken;
+    private String externalTransactionId;
+
+    protected Payment() {}
 
     public Payment(String idempotencyKey, String merchantId, Money amount, String paymentMethodToken){
         this.id = UUID.randomUUID();
@@ -28,7 +31,7 @@ public class Payment {
         this.paymentMethodToken = paymentMethodToken;
     }
 
-    private Payment(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt, String paymentMethodToken){
+    private Payment(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt, String paymentMethodToken, String externalTransactionId){
         this.id = id;
         this.idempotencyKey = idempotencyKey;
         this.merchantId = merchantId;
@@ -37,10 +40,11 @@ public class Payment {
         this.createdAt = createdAt;
         this.processedAt = processedAt;
         this.paymentMethodToken = paymentMethodToken;
+        this.externalTransactionId = externalTransactionId;
     }
 
-    public static Payment restore(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt, String paymentMethodToken){
-        return new Payment(id, idempotencyKey, merchantId, amount, status, createdAt, processedAt, paymentMethodToken);
+    public static Payment restore(UUID id, String idempotencyKey, String merchantId, Money amount, PaymentStatus status, LocalDateTime createdAt, LocalDateTime processedAt, String paymentMethodToken, String externalTransactionId){
+        return new Payment(id, idempotencyKey, merchantId, amount, status, createdAt, processedAt, paymentMethodToken, externalTransactionId);
     }
 
     public void authorize(){
@@ -68,6 +72,22 @@ public class Payment {
     }
     
 
+    public void refund(){
+        if(this.status != PaymentStatus.CAPTURED){
+            throw new InvalidPaymentStateException("Solo pagos previamente capturados (exitosos) pueden ser reembolsados");
+        }
+        this.status = PaymentStatus.REFUNDED;
+        this.processedAt = LocalDateTime.now();
+    }
+    
+    public void setExternalTransactionId(String externalId) {
+        this.externalTransactionId = externalId;
+    }
+
+    public void setStatus(PaymentStatus status) {
+        this.status = status;
+    }
+
     public UUID getId(){return id;}
     public String getMerchantId(){return merchantId;}
     public Money getAmount(){return amount;}
@@ -76,5 +96,6 @@ public class Payment {
     public LocalDateTime getCreatedAt(){return createdAt;}
     public LocalDateTime getProcessedAt(){return processedAt;}
     public String getPaymentMethodToken(){return paymentMethodToken;}
+    public String getExternalTransactionId(){return externalTransactionId;}
     
 }

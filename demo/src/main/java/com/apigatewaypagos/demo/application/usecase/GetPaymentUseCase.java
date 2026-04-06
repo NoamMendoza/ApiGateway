@@ -20,16 +20,17 @@ public class GetPaymentUseCase {
         this.paymentRepository = paymentRepository;
     }
 
-    public PaymentResponseDTO execute(UUID paymentId) {
-        log.info("Consultando estado del pago — paymentId={}", paymentId);
+    public PaymentResponseDTO execute(UUID paymentId, String merchantId) {
+        log.info("Consultando estado del pago — paymentId={}, merchantId={}", paymentId, merchantId);
 
         return paymentRepository.findById(paymentId)
+            .filter(payment -> payment.getMerchantId().equals(merchantId))
             .map(payment -> {
-                log.debug("Pago encontrado — paymentId={}, status={}", payment.getId(), payment.getStatus());
+                log.debug("Pago encontrado y autorizado para el comercio — paymentId={}, status={}", payment.getId(), payment.getStatus());
                 return PaymentResponseDTO.fromDomain(payment);
             })
             .orElseThrow(() -> {
-                log.warn("Pago no encontrado — paymentId={}", paymentId);
+                log.warn("Pago no encontrado o sin acceso — paymentId={}, merchantId={}", paymentId, merchantId);
                 return new PaymentNotFoundException("No se encontró el pago con ID: " + paymentId);
             });
     }

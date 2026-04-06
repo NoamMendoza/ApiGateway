@@ -24,7 +24,7 @@ public class CreateApiKeyUseCase {
     public String execute(String merchantId){
         String secret = UUID.randomUUID().toString().replace("-", "");
         String rawKey = "sk_live_" + secret;
-        String prefix = rawKey.substring(0, 8);
+        String prefix = rawKey.substring(0, 16);
         String hashedKey = org.apache.commons.codec.digest.DigestUtils.sha256Hex(rawKey);
 
         ApiKey newkey = new ApiKey(
@@ -34,7 +34,8 @@ public class CreateApiKeyUseCase {
             hashedKey,
             true,
             LocalDateTime.now(),
-            LocalDateTime.now().plusYears(1)
+            LocalDateTime.now().plusYears(1),
+            "CHARGE,REFUND"
         );
 
         apiKeyRepository.save(newkey);

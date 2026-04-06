@@ -34,10 +34,11 @@ public class BankGatewayAdapterTest {
         System.out.println("💳 PRUEBA DEL ADAPTADOR BANCARIO");
         System.out.println("=========================================");
         
-        // El adaptador ahora simula una llamada con retardo y retorna true
-        boolean result = bankGatewayAdapter.process(dummyPayment);
+        // El adaptador ahora simula una llamada con retardo y retorna un objeto Result
+        com.apigatewaypagos.demo.application.port.out.PaymentGatewayResult result = bankGatewayAdapter.process(dummyPayment);
 
-        assertThat(result).isTrue();
+        assertThat(result.isSuccess()).isTrue();
+        System.out.println("Result Intent ID: " + result.externalId());
         System.out.println("=========================================");
     }
 }

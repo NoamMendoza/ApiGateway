@@ -25,16 +25,21 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String apiKey = request.getHeader("X-API-KEY");
-        String redisKey = "rate_limit:" + apiKey;
+        String method = request.getMethod();
+        
+        // Las consultas (GET) soportan más tráfico por el dashboard, los cobros (POST) se limitan estrictamente.
+        long maxRequests = method.equalsIgnoreCase("GET") ? 60 : 5;
+        
+        String redisKey = "rate_limit:" + method + ":" + apiKey;
         Long counter = stringRedisTemplate.opsForValue().increment(redisKey, 1);
 
         if (counter != null && counter == 1) {
             stringRedisTemplate.expire(redisKey, WINDOW_MINUTES, TimeUnit.MINUTES);
         }
 
-        if (counter != null && counter > MAX_REQUESTS) {
-            log.warn("Rate limit excedido — apiKey={}, contador={}/{}, path={}",
-                    maskKey(apiKey), counter, MAX_REQUESTS, request.getRequestURI());
+        if (counter != null && counter > maxRequests) {
+            log.warn("Rate limit excedido — apiKey={}, method={}, contador={}/{}, path={}",
+                    maskKey(apiKey), method, counter, maxRequests, request.getRequestURI());
             response.setStatus(429);
             return false;
         }

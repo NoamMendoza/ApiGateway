@@ -8,8 +8,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
     private final ApiKeyAuthFilter apiKeyAuthFilter;
 
@@ -23,16 +26,19 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos (Swagger y Actuator)
+                // Endpoints públicos (Swagger, Actuator, Frontend, Webhooks, Metrics)
                 .requestMatchers(
                     "/swagger-ui.html",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
-                    "/actuator/**"
+                    "/actuator/**",
+                    "/*.html",
+                    "/*.css",
+                    "/*.js",
+                    "/api/webhooks/**",
+                    "/api/admin/metrics"
                 ).permitAll()
-                // Todos los endpoints de pagos requieren API Key
-                .requestMatchers("/api/payments/**").authenticated()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

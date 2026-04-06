@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Gateway — Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js para la gráfica de dona -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body>
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">💳 PayGateway</div>
+            <nav>
+                <a class="nav-item active" href="#">📊 Dashboard</a>
+                <a class="nav-item" href="/swagger-ui.html">📖 API Docs</a>
+            </nav>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main">
+            <header class="topbar">
+                <h1>Panel de Monitoreo</h1>
+                <span id="last-updated">Actualizando...</span>
+            </header>
+
+            <!-- KPI Cards -->
+            <section class="kpi-grid">
+                <div class="card kpi-card">
+                    <p class="kpi-label">Cobros Hoy</p>
+                    <h2 class="kpi-value" id="total-today">—</h2>
+                </div>
+                <div class="card kpi-card">
+                    <p class="kpi-label">Ingresos Hoy</p>
+                    <h2 class="kpi-value" id="revenue-today">—</h2>
+                </div>
+                <div class="card kpi-card">
+                    <p class="kpi-label">Tasa de Éxito</p>
+                    <h2 class="kpi-value" id="success-rate">—</h2>
+                </div>
+                <div class="card kpi-card kpi-danger">
+                    <p class="kpi-label">Disputas Activas</p>
+                    <h2 class="kpi-value" id="disputes">—</h2>
+                </div>
+            </section>
+
+            <!-- Gráfica + Tabla -->
+            <section class="content-grid">
+                <div class="card chart-card">
+                    <h3>Distribución de Estados</h3>
+                    <canvas id="status-chart"></canvas>
+                </div>
+                <div class="card table-card">
+                    <div class="table-header-container">
+                        <h3>Transacciones Recientes</h3>
+                        <div class="filters-bar">
+                            <input type="text" id="filter-id" placeholder="Buscar ID..." class="filter-input">
+                            <select id="filter-status" class="filter-input">
+                                <option value="">Estado: Todos</option>
+                                <option value="CAPTURED">CAPTURED</option>
+                                <option value="PENDING">PENDING</option>
+                                <option value="DECLINED">DECLINED</option>
+                                <option value="DISPUTED">DISPUTED</option>
+                                <option value="REFUNDED">REFUNDED</option>
+                                <option value="FAILED">FAILED</option>
+                            </select>
+                            <input type="date" id="filter-start-date" class="filter-input date-input" title="Desde">
+                            <input type="date" id="filter-end-date" class="filter-input date-input" title="Hasta">
+                            <input type="number" id="filter-min" placeholder="Min $" class="filter-input amount-input">
+                            <input type="number" id="filter-max" placeholder="Max $" class="filter-input amount-input">
+                        </div>
+                    </div>
+                    <table id="payments-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-body">
+                            <tr>
+                                <td colspan="4">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

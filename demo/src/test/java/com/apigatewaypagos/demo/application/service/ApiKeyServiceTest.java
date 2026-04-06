@@ -39,27 +39,28 @@ public class ApiKeyServiceTest {
 
     @Test
     void validate_keyValida_ReturnsMerchantId() {
-        ApiKey validKey = new ApiKey(UUID.randomUUID(), "micasa_mx", prefix, hashedSecret, true, LocalDateTime.now(), LocalDateTime.now().plusDays(30));
+        ApiKey validKey = new ApiKey(UUID.randomUUID(), "micasa_mx", prefix, hashedSecret, true, LocalDateTime.now(), LocalDateTime.now().plusDays(30), "CHARGE");
 
         when(apiKeyRepository.findByKeyPrefix(prefix)).thenReturn(Optional.of(validKey));
 
         // Act
-        Optional<String> merchantId = apiKeyService.validateAndGetMerchantId(rawSecret);
+        Optional<ApiKeyService.ApiKeyResult> merchantId = apiKeyService.validateAndGetApiKeyDetails(rawSecret);
 
         // Assert
         assertTrue(merchantId.isPresent(), "La llave debería ser válida y retornar un merchantId");
-        assertEquals("micasa_mx", merchantId.get());
+        assertEquals("micasa_mx", merchantId.get().merchantId());
+        assertEquals("CHARGE", merchantId.get().scopes());
         verify(apiKeyRepository, times(1)).findByKeyPrefix(prefix);
     }
 
     @Test
     void validate_KeyInactiva_ReturnsEmpty() {
         // isActive = false
-        ApiKey revokedKey = new ApiKey(UUID.randomUUID(), "micasa_mx", prefix, hashedSecret, false, LocalDateTime.now(), LocalDateTime.now().plusDays(30));
+        ApiKey revokedKey = new ApiKey(UUID.randomUUID(), "micasa_mx", prefix, hashedSecret, false, LocalDateTime.now(), LocalDateTime.now().plusDays(30), "CHARGE");
         when(apiKeyRepository.findByKeyPrefix(prefix)).thenReturn(Optional.of(revokedKey));
         
         // Act
-        Optional<String> merchantId = apiKeyService.validateAndGetMerchantId(rawSecret);
+        Optional<ApiKeyService.ApiKeyResult> merchantId = apiKeyService.validateAndGetApiKeyDetails(rawSecret);
         
         // Assert
         assertFalse(merchantId.isPresent(), "La llave no debería ser válida porque está inactiva (revocada)");
@@ -68,11 +69,11 @@ public class ApiKeyServiceTest {
     @Test
     void validate_KeyExpirada_ReturnsEmpty() {
         // expiresAt = ayer
-        ApiKey expiredKey = new ApiKey(UUID.randomUUID(), "micasa_mx", prefix, hashedSecret, true, LocalDateTime.now().minusDays(2), LocalDateTime.now().minusDays(1));
+        ApiKey expiredKey = new ApiKey(UUID.randomUUID(), "micasa_mx", prefix, hashedSecret, true, LocalDateTime.now().minusDays(2), LocalDateTime.now().minusDays(1), "CHARGE");
         when(apiKeyRepository.findByKeyPrefix(prefix)).thenReturn(Optional.of(expiredKey));
         
         // Act
-        Optional<String> merchantId = apiKeyService.validateAndGetMerchantId(rawSecret);
+        Optional<ApiKeyService.ApiKeyResult> merchantId = apiKeyService.validateAndGetApiKeyDetails(rawSecret);
         
         // Assert
         assertFalse(merchantId.isPresent(), "La llave no debería ser válida porque ya expiró");
@@ -84,7 +85,7 @@ public class ApiKeyServiceTest {
         when(apiKeyRepository.findByKeyPrefix(prefix)).thenReturn(Optional.empty());
         
         // Act
-        Optional<String> merchantId = apiKeyService.validateAndGetMerchantId(rawSecret);
+        Optional<ApiKeyService.ApiKeyResult> merchantId = apiKeyService.validateAndGetApiKeyDetails(rawSecret);
         
         // Assert
         assertFalse(merchantId.isPresent(), "La llave no debería ser válida porque no existe en la BD");

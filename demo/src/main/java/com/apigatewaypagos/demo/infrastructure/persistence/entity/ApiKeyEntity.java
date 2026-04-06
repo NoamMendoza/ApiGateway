@@ -45,6 +45,9 @@ public class ApiKeyEntity {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name = "scopes")
+    private String scopes;
+
     public static ApiKeyEntity fromDomain(com.apigatewaypagos.demo.domain.model.ApiKey apiKey){
         ApiKeyEntity entity = new ApiKeyEntity();
         entity.setId(apiKey.getId());
@@ -54,6 +57,7 @@ public class ApiKeyEntity {
         entity.setIsActive(apiKey.getIsActive());
         entity.setCreatedAt(apiKey.getCreatedAt());
         entity.setExpiresAt(apiKey.getExpiresAt());
+        entity.setScopes(apiKey.getScopes());
         return entity;
     }
 
@@ -65,7 +69,8 @@ public class ApiKeyEntity {
             this.hashedKey,
             this.createdAt,
             this.isActive,
-            this.expiresAt
+            this.expiresAt,
+            this.scopes
         );
     };
 }

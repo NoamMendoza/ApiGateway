@@ -10,4 +10,16 @@ public interface PaymentRepository {
 
     Optional<Payment> findById(UUID id);
     Optional<Payment> findByIdempotencyKey(String idempotencyKey);
+    Optional<Payment> findByExternalTransactionId(String externalTransactionId);
+    java.util.List<Payment> findByMerchantId(
+        String merchantId, 
+        String paymentId,
+        com.apigatewaypagos.demo.domain.model.PaymentStatus status,
+        java.time.LocalDateTime startDate,
+        java.time.LocalDateTime endDate,
+        java.math.BigDecimal minAmount,
+        java.math.BigDecimal maxAmount,
+        int page, 
+        int size
+    );
 }

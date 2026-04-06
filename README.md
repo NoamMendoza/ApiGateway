@@ -1,107 +1,130 @@
-# 🚀 B2B Payment Gateway Core
+# 🏦 B2B Payment Gateway Core
 
-Un núcleo transaccional avanzado y robusto (Payment Gateway) diseñado para procesar y enrutar pagos con tarjetas hacia **Stripe** de forma segura. Construido con arquitectura de grado empresarial y principios de **Clean Architecture** (Ports & Adapters) para separar la lógica de negocio de la infraestructura tecnológica externa.
+Un núcleo transaccional de grado empresarial que implementa una pasarela de pagos B2B completa sobre **Stripe**, con soporte de reembolsos, detección de contracargos y notificaciones asíncronas en tiempo real a los comercios. Construido con **Arquitectura Hexagonal** (Ports & Adapters) sobre Spring Boot.
 
-Perfecto para integrarse como el backend de pagos de cualquier plataforma de SaaS, E-Commerce o aplicación móvil B2B.
+> **Diseñado para**: plataformas SaaS, E-Commerce B2B y aplicaciones que necesiten cobrar con tarjeta sin construir su propia integración bancaria.
 
 ---
 
-## ✨ Características Principales (Enterprise-Ready)
+## ✨ Características Enterprise
 
-- 🛡️ **Seguridad Criptográfica**: Autenticación B2B mediante API Keys cifradas asimétricamente con SHA-256 manejadas por un filtro de seguridad de Spring (Sin exposición de contraseñas en texto plano).
-- 🔄 **Alta Resiliencia**: Patrones de Circuit Breaker integrados con `resilience4j` para proteger el sistema contra demoras y caídas de los servidores mundiales del banco adquirente (Stripe).
-- 🚦 **Rate Limiting Distribuido**: Algoritmo de mitigación de ataques estructurado sobre **Redis** en memoria, diseñado para evitar denegación de servicios (DDoS).
-- 📩 **Arquitectura Orientada a Eventos (EDA)**: Las validaciones de pagos emiten la transacción asíncronamente hacia **RabbitMQ**, posibilitando que otros servicios de inventario, analítica o facturación consuman estas auditorías sin afectar la latencia.
-- 🐘 **Integridad de Datos**: Transacciones seguras e idempotentes (Idempotency-Keys) almacenadas en **PostgreSQL**, con control de versiones manejado por **Flyway**.
-- 📖 **Documentación Automática**: Endpoints documentados en tiempo real listos al instante gracias al uso de Swagger (OpenAPI 3.0).
+| Categoría | Feature |
+|-----------|---------|
+| 🔐 **Seguridad** | Anti-Timing Attacks (MessageDigest), Protección BOLA/IDOR (Segregación por Merchant), Anti-XSS (Sanitización DOM) |
+| 💳 **Pagos** | Cobros síncronos vía Stripe, **Idempotencia Inteligente** (reintentos sin doble cobro) |
+| 🔄 **Reembolsos** | Endpoint dedicado con validación de propiedad (IDOR Protected), persistencia y notificación |
+| 📨 **Webhooks Salientes** | Firmas **HMAC-SHA256** (`X-PayGateway-Signature`), reintentos automáticos y secretos únicos |
+| 📈 **Dashboard** | Pantalla de métricas **Responsiva** (Mobile/TV), KPIs privados por comercio y gráficas en tiempo real |
+| 🏗️ **Infraestructura** | Redis Caching por usuario, PostgreSQL + Flyway, RabbitMQ, Docker Compose |
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-- **Lenguaje**: Java 21
-- **Framework Core**: Spring Boot 3.4.x (WebMVC, Data JPA, Security)
-- **Base de Datos**: PostgreSQL
-- **Caché y Limitador**: Redis
-- **Message Broker**: RabbitMQ
-- **Integraciones**: Stripe SDK
-- **DevOps**: Docker & Docker Compose
-- **Documentación API**: springdoc-openapi (Swagger)
+| Capa | Tecnología |
+|------|-----------|
+| **Lenguaje** | Java 21 |
+| **Framework** | Spring Boot 4.x (WebMVC, Data JPA, Security, AMQP) |
+| **Base de Datos** | PostgreSQL 18 + Flyway (migraciones versionadas) |
+| **Caché / Rate Limit** | Redis |
+| **Message Broker** | RabbitMQ |
+| **Pasarela Bancaria** | Stripe SDK |
+| **Resiliencia** | Resilience4j (Circuit Breaker), Spring Retry |
+| **DevOps** | Docker & Docker Compose |
+| **Documentación** | springdoc-openapi (Swagger UI) |
 
 ---
 
-## ⚙️ Arquitectura
+## ⚙️ Arquitectura Hexagonal
 
-Este sistema cumple de manera estricta los principios de **Arquitectura Hexagonal**.
-
-- `domain`: Las reglas de negocio primordiales (Ej. cómo validar un dinero, estados de pago). No tiene dependencias externas, asegurando portabilidad absoluta.
-- `application`: Casos de uso e Interfaces (Ports) de entrada y salida (Interactor y API Key Management).
-- `infrastructure`: Adaptadores del exterior (Web Controllers, Repositorios de Data JPA, Filtros REST API, Client calls a mensajería de RabbitMQ y consumo web a Stripe).
+```
+┌─────────────────────────────────────────────────────────┐
+│                     INFRASTRUCTURE                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐  │
+│  │ Web          │  │ Persistence  │  │ Messaging     │  │
+│  │ Controllers  │  │ JPA/Flyway   │  │ RabbitMQ      │  │
+│  │ Filters      │  │ Redis        │  │ Stripe Client │  │
+│  └──────┬───────┘  └──────┬───────┘  └───────┬───────┘  │
+│         │                 │                  │           │
+│  ┌──────▼─────────────────▼──────────────────▼───────┐   │
+│  │              APPLICATION (Use Cases)               │   │
+│  │  ProcessPaymentInteractor  RefundPaymentInteractor │   │
+│  │  CreateApiKeyUseCase       StripeWebhookService    │   │
+│  └──────────────────────┬────────────────────────────┘   │
+│                         │                                 │
+│  ┌──────────────────────▼────────────────────────────┐   │
+│  │                    DOMAIN                          │   │
+│  │   Payment  Money  PaymentStatus  ApiKey            │   │
+│  │   (Sin dependencias externas — portable)           │   │
+│  └───────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🚀 Requisitos y Configuración Local
+## 🚀 Configuración Local
 
-1. Asegúrate de tener instalado **Docker** en tu sistema.
-2. Clona el repositorio.
-3. El proyecto incluye un archivo `compose.yaml` para levantar toda la infraestructura sin configuraciones manuales:
+### Pre-requisitos
+- **Docker Desktop** instalado y corriendo
+- **Java 21**
+- **Maven 3.9+**
+- Opcional: **Stripe CLI** para probar webhooks localmente
+
+### 1. Clonar e iniciar infraestructura
 
 ```bash
-docker compose up -d
+git clone <repo-url>
+cd gateway_pagos/demo
+docker compose up -d   # Levanta Postgres, Redis y RabbitMQ
 ```
-Verifica tener los siguientes puertos libres: `5432` (Postgres), `6379` (Redis), y `5672` (RabbitMQ).
 
-4. **Variables de Entorno**. En el entorno de desarrollo, la API Key de integración corre en modo de prueba (`sk_test...`). Sin embargo, es buena práctica registrarte gratis en [Stripe Developers](https://dashboard.stripe.com/) y obtener la tuya.
+### 2. Configurar Stripe (opcional en dev)
 
-Exponla en tu terminal (Ejemplo para PowerShell):
+El proyecto incluye una API Key de test preconfigurada. Para usar la tuya:
+
 ```powershell
-$env:STRIPE_API_KEY="sk_test_1234..."
+# PowerShell
+$env:STRIPE_API_KEY="sk_test_TU_CLAVE_AQUI"
+$env:STRIPE_WEBHOOK_SECRET="whsec_TU_SECRETO_AQUI"  # obtenido con stripe listen
 ```
 
-5. Compila y ejecuta el Servidor:
+### 3. Arrancar el servidor
+
 ```bash
-mvn clean install
 mvn spring-boot:run
 ```
 
----
+El servidor estará disponible en `http://localhost:8080`.
 
-## 🏢 Adaptación para tu propio Negocio (Variables de Entorno)
-
-Si deseas clonar este proyecto y configurarlo para tu propia startup o empresa de pagos, el sistema está diseñado para leer **Variables de Entorno** sin necesidad de modificar el código fuente (`application-dev.properties` y `application.properties`).
-
-Para salir del modo de prueba local, debes inyectar las siguientes variables en tu servidor (AWS, Railway, Render, etc.) o dentro de tu archivo `docker-compose`:
-
-| Variable de Entorno | Valor por defecto en Dev | Descripción y Uso en Producción |
-| :--- | :--- | :--- |
-| `STRIPE_API_KEY` | `sk_test_51...` | **CRÍTICO.** Sustitúyela por tu *Live Key* de Stripe (`sk_live_...`) para empezar a capturar transacciones con dinero real. |
-| `DB_USER` | `postgres` | Usuario de seguridad de PostgreSQL. Cámbialo por un rol con permisos restrigidos. |
-| `DB_PASSWORD` | `postgres` | Contraseña de tu motor de base de datos relacional. |
-| `RABBITMQ_USER` | `guest` | Usuario para el broker de mensajería (Eventos de finalización de pago). |
-| `RABBITMQ_PASS` | `guest` | Contraseña del broker. |
-| `SSL_KEY_PASSWORD` | `changeit` | Contraseña de tu almacén de certificados PKCS12 (`.p12`) obligatorio para arrancar tu API en puerto seguro HTTPS/TLS. |
+📖 **Swagger UI:** `http://localhost:8080/swagger-ui.html`
 
 ---
 
-## 🎮 Guía de Inicio Rápido
+## 🎮 Guía de Uso Rápido
 
-La pasarela de pago correrá en `http://localhost:8080`. Puedes acceder instantáneamente a todos los endpoints listados dentro de **Swagger UI**:
+### Paso 1 — Generar API Key para el comercio
 
-🔗 **Ver Documentación:** `http://localhost:8080/swagger-ui.html`
+```http
+POST /api/admin/merchants/{merchantId}/keys
+```
+> Guarda la `sk_live_...` que devuelve. No se vuelve a mostrar.
 
-### 1️⃣ Emitir una API Key para un Comercio (Admin)
-Antes de cobrar, debes dar de alta un comercio emitiéndole una credencial.
-**[POST]** `/api/admin/merchants/micasa_mx/keys`
-La respuesta será un texto plano con la Secret Key (No la pierdas, ¡no se vuelve a mostrar!).
+### Paso 2 — Configurar URL de Webhook del comercio
 
-### 2️⃣ Cargar un Cobro Bancario (B2B)
-**[POST]** `/api/payments`
-Añade los siguientes Headers para validación obligatoria:
-* `X-API-KEY`: *La Secret Key generada en el paso anterior*
-* `Idempotency-key`: `test-compra-1234` *(UUID o cadena única para evitar cobros dobles)*
+```http
+PUT /api/admin/merchants/{merchantId}/webhook
+Content-Type: application/json
 
-**Cuerpo de la Petición (JSON):**
-```json
+{ "webhookUrl": "https://tu-sistema.com/webhooks" }
+```
+
+### Paso 3 — Realizar un cobro
+
+```http
+POST /api/payments
+X-API-KEY: sk_live_tu_clave
+Idempotency-Key: compra-uuid-unico
+
 {
   "paymentMethodToken": "pm_card_visa",
   "amount": 250.75,
@@ -109,4 +132,140 @@ Añade los siguientes Headers para validación obligatoria:
 }
 ```
 
-La transacción iniciará, se enrutará asíncronamente y dejará una estela de auditoría en la BD antes de emitirse como evento final 💳.
+**Respuesta exitosa:**
+```json
+{
+  "paymentId": "uuid",
+  "merchantId": "micasa_mx",
+  "status": "CAPTURED",
+  "amount": 250.75,
+  "currency": "MXN"
+}
+```
+
+### Paso 4 — Reembolsar un pago
+
+```http
+POST /api/payments/{paymentId}/refund
+X-API-KEY: sk_live_tu_clave_con_scope_REFUND
+```
+
+### Paso 5 — Webhook que recibirá tu sistema
+
+Cuando el pago se captura, reembolsa o disputa, enviaremos un `POST` a tu `webhookUrl` con:
+
+```json
+{
+  "paymentId": "uuid",
+  "merchantId": "micasa_mx",
+  "status": "CAPTURED | REFUNDED | DISPUTED | FAILED",
+  "amount": 250.75,
+  "currency": "MXN"
+}
+```
+
+---
+
+## 🃏 Tarjetas de Prueba (Stripe Test Mode)
+
+| Token | Comportamiento |
+|-------|---------------|
+| `pm_card_visa` | Pago exitoso ✅ |
+| `pm_card_mastercard` | Pago exitoso ✅ |
+| `pm_card_visa_debit` | Débito exitoso ✅ |
+| `pm_card_declined` | Tarjeta declinada ❌ |
+| `pm_card_createDispute` | Pago exitoso + Disputa automática 🚨 |
+
+---
+
+## 🔐 Seguridad
+
+### Protección IDOR / BOLA
+- **Segregación Estricta**: Cada recurso (`Payment`, `Metrics`) está filtrado por el `merchantId` autenticado. Un comercio no puede acceder a transacciones ajenas ni siquiera conociendo el UUID.
+- **Validación en Application Layer**: Los Use Cases verifican la propiedad antes de procesar reembolsos o lecturas.
+
+### Hardening de API
+- **Anti-Timing Attacks**: Validación de API Keys con `MessageDigest.isEqual` para evitar ataques de tiempo basados en comparaciones iterativas de strings.
+- **Anti-XSS**: Sanitización proactiva de datos en el Dashboard usando `escapeHTML` para prevenir ataques de inyección de scripts vía nombres o campos de metadatos.
+- **Rate Limiting Distribuido**: 5 peticiones por minuto por API Key con ventana deslizante sobre Redis.
+
+### Webhooks Seguros (Egress)
+- **Firma de Mensajes**: Cada webhook enviado incluye el header `X-PayGateway-Signature`.
+- **Criptografía**: Firma HMAC-SHA256 generada con un secreto único de 40 caracteres por comercio.
+- **Infraestructura**: Despacho asíncrono vía RabbitMQ con 3 reintentos automáticos y backoff exponencial.
+
+---
+
+## 🌐 Variables de Entorno
+
+| Variable | Default (dev) | Producción |
+|----------|---------------|-----------|
+| `STRIPE_API_KEY` | `sk_test_51...` | Tu Live Key de Stripe |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Secreto del endpoint en Stripe Dashboard |
+| `DB_USER` | `postgres` | Usuario restringido |
+| `DB_PASSWORD` | `postgres` | Contraseña segura |
+| `RABBITMQ_USER` | `guest` | Usuario de producción |
+| `RABBITMQ_PASS` | `guest` | Contraseña segura |
+
+---
+
+## 🧪 Probar Webhooks Localmente (Stripe CLI)
+
+```bash
+# Instalar Stripe CLI (Windows)
+winget install Stripe.StripeCLI
+
+# Autenticarse
+stripe login
+
+# Reenviar eventos a tu servidor local
+stripe listen --forward-to localhost:8080/api/webhooks/stripe
+
+# Simular un contracargo
+stripe trigger charge.dispute.created
+```
+
+---
+
+## 📊 Dashboard de Control (Merchant Hub)
+
+El proyecto incluye un dashboard administrativo moderno alojado en `/dashboard.html` que ofrece:
+- **Responsive Design**: Optimizado para Mobile, Tablet, Desktop y 4K (TV).
+- **KPIs en Vivo**: Ingresos del día, Tasas de éxito y Volumen transaccional.
+- **Filtrado Avanzado**: Búsqueda por ID, Estado, Rango de Fechas y Montos.
+- **Seguridad**: Autenticación vía API Key almacenada localmente.
+
+---
+
+## 🔁 Idempotencia Inteligente (Double Charge Prevention)
+
+A diferencia de implementaciones básicas, este Gateway implementa lógica "Smart":
+1. **Detección**: Si se recibe el mismo `Idempotency-Key`, el sistema pausa el procesamiento.
+2. **Validación**: Compara los parámetros (`amount`, `currency`, `merchantId`).
+3. **Respuesta**: Si los parámetros son idénticos, devuelve el resultado original de forma instantánea. Si difieren, bloquea la transacción para evitar fraudes de colisión de llaves.
+
+---
+
+## 📈 Ciclo de Vida de un Pago
+
+## 📁 Estructura del Proyecto
+
+```
+src/main/java/com/apigatewaypagos/demo/
+├── domain/
+│   ├── model/          # Payment, Money, PaymentStatus, ApiKey
+│   ├── repository/     # Interfaces de repositorio (Ports)
+│   └── exception/      # Excepciones de dominio
+├── application/
+│   ├── usecase/        # ProcessPaymentInteractor, RefundPaymentInteractor
+│   ├── service/        # ApiKeyService
+│   └── port/out/       # BankGatewayPort, EventPublisherPort, PaymentGatewayResult
+└── infrastructure/
+    ├── bank/           # BankGatewayAdapter (Stripe)
+    ├── messaging/      # RabbitMqEventPublisherAdapter, WebhookEmissionWorker
+    ├── persistence/    # PaymentRepositoryAdapter, JPA Entities
+    └── web/
+        ├── controller/ # PaymentController, ApiKeyAdminController
+        ├── webhook/    # StripeWebhookController, StripeWebhookService
+        └── security/   # ApiKeyAuthFilter, RateLimitInterceptor
+```

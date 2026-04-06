@@ -31,7 +31,8 @@ public class RevokeApiKeyUseCase {
             apiKey.getHashedKey(),
             apiKey.getCreatedAt(),
             false,
-            apiKey.getExpiresAt()
+            apiKey.getExpiresAt(),
+            apiKey.getScopes()
         );
 
         apiKeyRepository.save(revokedKey);

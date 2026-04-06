@@ -22,4 +22,13 @@ public record PaymentRequest(
     @NotBlank(message = "La moneda es obligatoria")
     @Size(min = 3, max = 3, message = "La moneda debe tener exactamente 3 caracteres")
     String currency
-) {}
+) {
+    @Override
+    public String toString() {
+        return "PaymentRequest[" +
+                "paymentMethodToken=***MASKED***" +
+                ", amount=" + amount +
+                ", currency='" + currency + '\'' +
+                ']';
+    }
+}

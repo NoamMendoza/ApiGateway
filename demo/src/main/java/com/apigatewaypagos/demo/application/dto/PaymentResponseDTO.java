@@ -29,7 +29,7 @@ public record PaymentResponseDTO(
     
     @Schema(description = "Fecha exacta en que el banco emisor resolvió el cobro")
     LocalDateTime processedAt
-) {
+) implements java.io.Serializable {
     public static PaymentResponseDTO fromDomain(Payment payment) {
         return new PaymentResponseDTO(
             payment.getId(),
