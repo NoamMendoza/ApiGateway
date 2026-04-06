@@ -248,6 +248,30 @@ A diferencia de implementaciones básicas, este Gateway implementa lógica "Smar
 
 ## 📈 Ciclo de Vida de un Pago
 
+## 🧪 Pruebas y QA (Test Suite)
+
+El proyecto incluye una suite de pruebas robusta que garantiza la seguridad y la resiliencia del gateway.
+
+### Categorías de Pruebas
+
+1.  **Unitarias (Domain & Application)**:
+    -   **Seguridad IDOR/BOLA**: Verificación de aislamiento entre comercios en interactores (`RefundPaymentInteractorTest`).
+    -   **Idempotencia**: Prevención de cargos dobles mediante validación de llaves únicas (`ProcessPaymentInteractorTest`).
+    -   **Webhooks**: Validación de lógica de reintentos y firmas HMAC (`WebhookEmissionWorkerTest`).
+2.  **Integración (Infrastructure & Containers)**:
+    -   Utiliza **Testcontainers** para levantar instancias reales de PostgreSQL, Redis y RabbitMQ durante la ejecución de los tests.
+    -   **Aislamiento de Comercio (Zero Trust)**: `PaymentSecurityIntegrationTest` valida que los controladores rechacen accesos cruzados mediante MockMvc y una base de datos real.
+
+### Cómo ejecutar los tests
+
+Asegúrate de tener **Docker Desktop** iniciado y ejecuta desde la carpeta `demo`:
+
+```bash
+mvn test
+```
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
