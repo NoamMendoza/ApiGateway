@@ -38,6 +38,11 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter{
 
         String providedApiKey = request.getHeader("X-API-KEY");
 
+        if (providedApiKey == null || providedApiKey.trim().isEmpty()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         Optional<ApiKeyService.ApiKeyResult> validate = apiKeyService.validateAndGetApiKeyDetails(providedApiKey);
 
         if (validate.isPresent()) {

@@ -39,13 +39,14 @@ class RefundPaymentInteractorTest {
     @InjectMocks
     private RefundPaymentInteractor interactor;
 
+    private String merchantId = "merchant_test";
     private UUID paymentId;
     private Payment capturedPayment;
 
     @BeforeEach
     void setUp() {
         paymentId = UUID.randomUUID();
-        capturedPayment = new Payment("idempotency-test-1", "merchant_test",
+        capturedPayment = new Payment("idempotency-test-1", merchantId,
                 new Money(new BigDecimal("150.00"), "MXN"), "pm_card_visa");
         capturedPayment.authorize();
         capturedPayment.capture();
@@ -61,12 +62,28 @@ class RefundPaymentInteractorTest {
         when(bankGatewayPort.refund(capturedPayment)).thenReturn(PaymentGatewayResult.success("re_stripe_123"));
 
         // When
-        Payment result = interactor.execute(paymentId);
+        Payment result = interactor.execute(paymentId, merchantId);
 
         // Then
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
         verify(paymentRepository).save(capturedPayment);
         verify(eventPublisherPort).publishPaymentCompletedEvent(capturedPayment);
+    }
+
+    @Test
+    @DisplayName("⚠️ FALLO DE SEGURIDAD (IDOR) — Comercio B intenta reembolsar pago de Comercio A")
+    void execute_WhenMerchantMismatch_ShouldThrowIllegalArgumentException() {
+        // Given
+        String maliciousMerchantId = "attacker_merchant_666";
+        when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(capturedPayment));
+
+        // When / Then
+        assertThatThrownBy(() -> interactor.execute(paymentId, maliciousMerchantId))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("permisos");
+
+        verify(bankGatewayPort, never()).refund(any());
+        verify(paymentRepository, never()).save(any());
     }
 
     @Test
@@ -76,7 +93,7 @@ class RefundPaymentInteractorTest {
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.empty());
 
         // When / Then
-        assertThatThrownBy(() -> interactor.execute(paymentId))
+        assertThatThrownBy(() -> interactor.execute(paymentId, merchantId))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining(paymentId.toString());
 
@@ -92,7 +109,7 @@ class RefundPaymentInteractorTest {
             .thenReturn(PaymentGatewayResult.failure("Fondos insuficientes en Stripe"));
 
         // When / Then
-        assertThatThrownBy(() -> interactor.execute(paymentId))
+        assertThatThrownBy(() -> interactor.execute(paymentId, merchantId))
             .isInstanceOf(RuntimeException.class)
             .hasMessageContaining("Reembolso fallido");
 
@@ -104,12 +121,12 @@ class RefundPaymentInteractorTest {
     @DisplayName("Reembolsar pago en estado PENDING — el dominio debe rechazarlo")
     void execute_WhenPaymentNotCaptured_ShouldThrowInvalidStateException() {
         // Given — pago en estado PENDING (nunca pasó por authorize/capture)
-        Payment pendingPayment = new Payment("idempotency-2", "merchant_test",
+        Payment pendingPayment = new Payment("idempotency-2", merchantId,
                 new Money(new BigDecimal("50.00"), "MXN"), "pm_card_visa");
         when(paymentRepository.findById(pendingPayment.getId())).thenReturn(Optional.of(pendingPayment));
 
         // When / Then
-        assertThatThrownBy(() -> interactor.execute(pendingPayment.getId()))
+        assertThatThrownBy(() -> interactor.execute(pendingPayment.getId(), merchantId))
             .isInstanceOf(InvalidPaymentStateException.class)
             .hasMessageContaining("capturados");
 
